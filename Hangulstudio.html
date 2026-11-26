@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hangul Studio</title>
+  <style>
+    :root {
+      --bg: #fdf2f8;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --accent: #db2777;
+      --accent-soft: #fce7f3;
+      --border: #e5e7eb;
+      --ok-ink: #166534;
+      --bad-ink: #dc2626;
+      --bad-bg: #fef2f2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 16px;
+    }
+
+    .app {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mode-switch {
+      display: inline-flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .stats {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--ink);
+      padding: 7px 11px;
+      font-size: 0.85rem;
+    }
+
+    button.active, button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active-view {
+      display: block;
+    }
+
+    /* Learn Mode Styles */
+    .learn-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .learn-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .learn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 10px;
+    }
+
+    .learn-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .learn-glyph {
+      font-size: 2.3rem;
+      line-height: 1.2;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .learn-romaji {
+      margin-top: 4px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .learn-group {
+      margin-top: 2px;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* Flashcards Mode Styles */
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+      gap: 6px;
+      max-height: 35vh;
+      overflow-y: auto;
+    }
+
+    .picker-grid.hidden {
+      display: none;
+    }
+
+    .char-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 4px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      color: var(--ink);
+      opacity: 0.45;
+    }
+
+    .char-chip.selected {
+      opacity: 1;
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .char-chip.weak-red,
+    .char-chip.selected.weak-red {
+      opacity: 1;
+      color: #b91c1c;
+      background: #fee2e2;
+      border-color: #dc2626;
+      font-weight: 700;
+    }
+
+    .char-chip .sub-badge {
+      font-size: 0.65rem;
+      line-height: 1.1;
+      margin-top: 2px;
+      color: inherit;
+    }
+
+    .flashcard {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    .group-tag {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .hangul-glyph {
+      font-size: 4.5rem;
+      line-height: 1.2;
+      margin: 8px 0 18px;
+      color: var(--ink);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      font: inherit;
+      font-size: 1rem;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid #cbd5e1;
+      width: 180px;
+      text-align: center;
+    }
+
+    input.wrong-input {
+      border-color: var(--bad-ink);
+      background: var(--bad-bg);
+    }
+
+    .feedback {
+      margin-top: 12px;
+      min-height: 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .feedback.ok { color: var(--ok-ink); }
+    .feedback.bad { color: var(--bad-ink); }
+
+    .actions-row {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Hangul Studio</h1>
+      <div class="header-right">
+        <div class="mode-switch" role="tablist" aria-label="Interface mode">
+          <button id="mode-btn-learn" class="mode-btn active" onclick="switchMode('learn')">Learn</button>
+          <button id="mode-btn-practice" class="mode-btn" onclick="switchMode('practice')">Flashcards</button>
+        </div>
+        <div id="practice-stats" class="stats" style="display: none;">Correct: <span id="correct-count">0</span></div>
+      </div>
+    </header>
+
+    <!-- Shared Section Filter Bar -->
+    <section class="panel">
+      <div class="filter-bar" style="margin-bottom: 0;">
+        <button id="btn-all" class="active" onclick="filterSection('all')">All (40)</button>
+        <button id="btn-vowels" onclick="filterSection('vowels')">Vowels (10)</button>
+        <button id="btn-consonants" onclick="filterSection('consonants')">Consonants (14)</button>
+        <button id="btn-double" onclick="filterSection('double')">Double (5)</button>
+        <button id="btn-compound" onclick="filterSection('compound')">Compound (11)</button>
+      </div>
+    </section>
+
+    <!-- PAGE 1: LEARN INTERFACE -->
+    <main id="view-learn" class="view-section active-view">
+      <section class="panel">
+        <div class="learn-header-row">
+          <p id="learn-summary" class="learn-subtitle">Study characters and their romanization before testing your memory.</p>
+          <button class="primary" onclick="switchMode('practice')">Start Flashcards →</button>
+        </div>
+        <div id="learn-grid" class="learn-grid"></div>
+      </section>
+    </main>
+
+    <!-- PAGE 2: FLASHCARDS PRACTICE INTERFACE -->
+    <main id="view-practice" class="view-section">
+      <section class="panel">
+        <div class="filter-bar" style="margin-bottom: 10px;">
+          <button id="btn-toggle-grid" onclick="toggleGrid()">Hide Grid</button>
+          <button onclick="switchMode('learn')">← Back to Learn</button>
+        </div>
+        <div id="picker-grid" class="picker-grid"></div>
+      </section>
+
+      <section class="flashcard">
+        <div id="group-tag" class="group-tag">Basic Vowel</div>
+        <div id="hangul-glyph" class="hangul-glyph">ㅏ</div>
+
+        <div class="input-row">
+          <input
+            id="answer-input"
+            type="text"
+            placeholder="Type romanization"
+            autocomplete="off"
+            autocapitalize="none"
+            onkeydown="if (event.key === 'Enter') checkAnswer()"
+          />
+          <button class="primary" onclick="checkAnswer()">Check</button>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+
+        <div class="actions-row">
+          <button onclick="showHint()">Show Reading</button>
+          <button onclick="pickNextCard()">Next Card</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const HANGUL_DATA = [
+      // Basic Vowels (10)
+      { glyph: "ㅏ", romaji: ["a"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅑ", romaji: ["ya"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅓ", romaji: ["eo", "o"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅕ", romaji: ["yeo", "yo"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅗ", romaji: ["o"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅛ", romaji: ["yo"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅜ", romaji: ["u", "oo"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅠ", romaji: ["yu", "yoo"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅡ", romaji: ["eu", "u"], group: "vowels", label: "Basic Vowel" },
+      { glyph: "ㅣ", romaji: ["i", "ee"], group: "vowels", label: "Basic Vowel" },
+
+      // Basic Consonants (14)
+      { glyph: "ㄱ", romaji: ["g", "k"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㄴ", romaji: ["n"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㄷ", romaji: ["d", "t"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㄹ", romaji: ["r", "l"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅁ", romaji: ["m"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅂ", romaji: ["b", "p"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅅ", romaji: ["s", "sh"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅇ", romaji: ["ng", "silent"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅈ", romaji: ["j", "z"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅊ", romaji: ["ch"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅋ", romaji: ["k"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅌ", romaji: ["t"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅍ", romaji: ["p", "f"], group: "consonants", label: "Basic Consonant" },
+      { glyph: "ㅎ", romaji: ["h"], group: "consonants", label: "Basic Consonant" },
+
+      // Double Consonants (5)
+      { glyph: "ㄲ", romaji: ["kk", "gg"], group: "double", label: "Double Consonant" },
+      { glyph: "ㄸ", romaji: ["tt", "dd"], group: "double", label: "Double Consonant" },
+      { glyph: "ㅃ", romaji: ["pp", "bb"], group: "double", label: "Double Consonant" },
+      { glyph: "ㅆ", romaji: ["ss"], group: "double", label: "Double Consonant" },
+      { glyph: "ㅉ", romaji: ["jj", "zz"], group: "double", label: "Double Consonant" },
+
+      // Compound Vowels (11)
+      { glyph: "ㅐ", romaji: ["ae", "e"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅒ", romaji: ["yae", "ye"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅔ", romaji: ["e", "ae"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅖ", romaji: ["ye"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅘ", romaji: ["wa"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅙ", romaji: ["wae", "we"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅚ", romaji: ["oe", "we"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅝ", romaji: ["wo"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅞ", romaji: ["we"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅟ", romaji: ["wi", "ui"], group: "compound", label: "Compound Vowel" },
+      { glyph: "ㅢ", romaji: ["ui", "eui", "yi"], group: "compound", label: "Compound Vowel" }
+    ];
+
+    const masteryState = {};
+    for (const item of HANGUL_DATA) {
+      masteryState[item.glyph] = {
+        wrongCount: 0,
+        correctTowardClear: 0,
+        isRed: false,
+        cycleIndex: 0
+      };
+    }
+
+    function getThresholds(cycleIndex) {
+      if (cycleIndex === 0) {
+        return { wrongToRed: 3, correctToClear: 10 };
+      }
+      return { wrongToRed: 5, correctToClear: 15 };
+    }
+
+    let currentMode = "learn"; // "learn" | "practice"
+    let activeFilter = "all";
+    let selectedGlyphs = new Set(HANGUL_DATA.map(item => item.glyph));
+    let currentCard = null;
+    let correctCount = 0;
+    let remainingQueue = [];
+
+    function getVisibleItems() {
+      if (activeFilter === "all") return HANGUL_DATA;
+      return HANGUL_DATA.filter(item => item.group === activeFilter);
+    }
+
+    function getActivePool() {
+      const pool = HANGUL_DATA.filter(item => selectedGlyphs.has(item.glyph));
+      if (pool.length) return pool;
+      const visible = getVisibleItems();
+      return visible.length ? visible : HANGUL_DATA;
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function rebuildQueue(avoidGlyph = null) {
+      const pool = getActivePool();
+      let nextBatch = shuffleArray(pool.map(item => item.glyph));
+      if (avoidGlyph && nextBatch.length > 1 && nextBatch[0] === avoidGlyph) {
+        const swapIdx = nextBatch.findIndex(g => g !== avoidGlyph);
+        if (swapIdx > 0) {
+          [nextBatch[0], nextBatch[swapIdx]] = [nextBatch[swapIdx], nextBatch[0]];
+        }
+      }
+      remainingQueue = nextBatch;
+    }
+
+    function resetScore() {
+      correctCount = 0;
+      document.getElementById("correct-count").textContent = "0";
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const isLearn = mode === "learn";
+
+      document.getElementById("mode-btn-learn").classList.toggle("active", isLearn);
+      document.getElementById("mode-btn-practice").classList.toggle("active", !isLearn);
+
+      document.getElementById("view-learn").classList.toggle("active-view", isLearn);
+      document.getElementById("view-practice").classList.toggle("active-view", !isLearn);
+      document.getElementById("practice-stats").style.display = isLearn ? "none" : "block";
+
+      if (isLearn) {
+        renderLearnGrid();
+      } else {
+        renderPicker();
+        if (!currentCard) pickNextCard();
+        setTimeout(() => document.getElementById("answer-input").focus(), 50);
+      }
+    }
+
+    function renderLearnGrid() {
+      const items = getVisibleItems();
+      const grid = document.getElementById("learn-grid");
+      const summary = document.getElementById("learn-summary");
+
+      summary.textContent = `Showing ${items.length} character${items.length === 1 ? "" : "s"} with romanization. Switch to Flashcards when ready to test memory.`;
+      grid.innerHTML = "";
+
+      items.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "learn-card";
+        card.innerHTML = `
+          <div class="learn-glyph">${item.glyph}</div>
+          <div class="learn-romaji">${item.romaji.filter(Boolean).join(" / ")}</div>
+          <div class="learn-group">${item.label}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleGrid() {
+      const grid = document.getElementById("picker-grid");
+      const btn = document.getElementById("btn-toggle-grid");
+      grid.classList.toggle("hidden");
+      btn.textContent = grid.classList.contains("hidden") ? "Show Grid" : "Hide Grid";
+    }
+
+    function filterSection(group) {
+      activeFilter = group;
+      resetScore();
+
+      document.querySelectorAll(".filter-bar button").forEach(btn => {
+        if (btn.id !== "btn-toggle-grid") btn.classList.remove("active");
+      });
+      document.getElementById(`btn-${group}`).classList.add("active");
+
+      const visible = getVisibleItems();
+      selectedGlyphs = new Set(visible.map(item => item.glyph));
+      rebuildQueue(null);
+      renderLearnGrid();
+      renderPicker();
+      pickNextCard();
+    }
+
+    function renderPicker() {
+      const grid = document.getElementById("picker-grid");
+      grid.innerHTML = "";
+
+      getVisibleItems().forEach(item => {
+        const st = masteryState[item.glyph];
+        const chip = document.createElement("button");
+        chip.type = "button";
+
+        let classes = "char-chip";
+        if (selectedGlyphs.has(item.glyph)) classes += " selected";
+        if (st.isRed) classes += " weak-red";
+        chip.className = classes;
+
+        const { correctToClear } = getThresholds(st.cycleIndex);
+        const badgeText = st.isRed
+          ? `${st.correctTowardClear}/${correctToClear}`
+          : (st.wrongCount > 0 ? `×${st.wrongCount}` : "");
+
+        chip.innerHTML = `${item.glyph}${badgeText ? `<span class="sub-badge">${badgeText}</span>` : ""}`;
+
+        chip.onclick = () => {
+          if (selectedGlyphs.has(item.glyph)) {
+            if (selectedGlyphs.size > 1) selectedGlyphs.delete(item.glyph);
+          } else {
+            selectedGlyphs.add(item.glyph);
+          }
+          remainingQueue = remainingQueue.filter(g => selectedGlyphs.has(g));
+          if (remainingQueue.length === 0) {
+            rebuildQueue(currentCard ? currentCard.glyph : null);
+          }
+          renderPicker();
+          if (!currentCard || !selectedGlyphs.has(currentCard.glyph)) {
+            pickNextCard();
+          }
+        };
+        grid.appendChild(chip);
+      });
+    }
+
+    function pickNextCard() {
+      const pool = getActivePool();
+      const validGlyphs = new Set(pool.map(item => item.glyph));
+
+      remainingQueue = remainingQueue.filter(g => validGlyphs.has(g));
+      if (remainingQueue.length === 0) {
+        rebuildQueue(currentCard ? currentCard.glyph : null);
+      }
+
+      const nextGlyph = remainingQueue.shift();
+      currentCard = HANGUL_DATA.find(item => item.glyph === nextGlyph) || pool[0];
+
+      document.getElementById("group-tag").textContent = currentCard.label;
+      document.getElementById("hangul-glyph").textContent = currentCard.glyph;
+
+      const input = document.getElementById("answer-input");
+      input.value = "";
+      input.classList.remove("wrong-input");
+
+      const fb = document.getElementById("feedback");
+      fb.textContent = "";
+      fb.className = "feedback";
+    }
+
+    function checkAnswer() {
+      if (!currentCard) return;
+      const input = document.getElementById("answer-input");
+      const fb = document.getElementById("feedback");
+      const guess = input.value.trim().toLowerCase();
+
+      if (!guess) return;
+
+      const st = masteryState[currentCard.glyph];
+      const { wrongToRed, correctToClear } = getThresholds(st.cycleIndex);
+
+      if (currentCard.romaji.includes(guess)) {
+        correctCount += 1;
+        document.getElementById("correct-count").textContent = correctCount;
+        st.wrongCount = 0;
+
+        let clearedMsg = "";
+        if (st.isRed) {
+          st.correctTowardClear += 1;
+          if (st.correctTowardClear >= correctToClear) {
+            st.isRed = false;
+            st.correctTowardClear = 0;
+            st.cycleIndex += 1;
+            clearedMsg = ` — ${currentCard.glyph} cleared back to normal!`;
+          } else {
+            clearedMsg = ` (${currentCard.glyph}: ${st.correctTowardClear}/${correctToClear} to clear red)`;
+          }
+        }
+
+        renderPicker();
+        input.classList.remove("wrong-input");
+        fb.className = "feedback ok";
+        fb.textContent = `Correct! (${currentCard.romaji.filter(Boolean).join(" / ")})${clearedMsg}`;
+        setTimeout(pickNextCard, 600);
+      } else {
+        st.wrongCount += 1;
+        if (st.isRed) {
+          st.correctTowardClear = 0;
+        } else if (st.wrongCount >= wrongToRed) {
+          st.isRed = true;
+          st.correctTowardClear = 0;
+        }
+
+        renderPicker();
+        input.classList.add("wrong-input");
+        fb.className = "feedback bad";
+        fb.textContent = st.isRed
+          ? `Wrong (${guess}) — ${currentCard.glyph} is highlighted red (${st.wrongCount} wrong)`
+          : `Try again ("${guess}" doesn't match — ${st.wrongCount}/${wrongToRed} wrong)`;
+        input.select();
+      }
+    }
+
+    function showHint() {
+      if (!currentCard) return;
+      const fb = document.getElementById("feedback");
+      fb.className = "feedback ok";
+      fb.textContent = `${currentCard.glyph} = ${currentCard.romaji.filter(Boolean).join(" / ")}`;
+    }
+
+    rebuildQueue(null);
+    renderLearnGrid();
+    renderPicker();
+    pickNextCard();
+  </script>
+</body>
+</html>
